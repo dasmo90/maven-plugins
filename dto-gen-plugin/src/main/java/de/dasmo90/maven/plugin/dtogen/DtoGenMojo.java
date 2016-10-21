@@ -1,6 +1,5 @@
 package de.dasmo90.maven.plugin.dtogen;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -39,6 +38,10 @@ import java.util.stream.Collectors;
 )
 public final class DtoGenMojo extends AbstractMojo {
 
+	private static final String TARGET_GENERATED_SOURCES = "target/generated-sources/";
+
+	private static final String SUFFIX_REGEX = "[A-Z][A-Za-z].*";
+
 	private MojoLogger LOG;
 
 	@Parameter(defaultValue = "${project}", readonly = true)
@@ -49,6 +52,9 @@ public final class DtoGenMojo extends AbstractMojo {
 
 	@Parameter(defaultValue = "Dto", readonly = true)
 	private String suffix;
+
+	@Parameter(defaultValue = "false", readonly = true)
+	private boolean generateSetters;
 
 	private List<Class> interfaces;
 	private List<DtoClass> generated;
@@ -108,15 +114,13 @@ public final class DtoGenMojo extends AbstractMojo {
 	}
 
 	private void generate() throws Exception {
-		generated = new DtoClassGenerator(LOG, suffix, interfaces).generate();
+		generated = new DtoClassGenerator(LOG, suffix, interfaces, generateSetters).generate();
 	}
-
-	private static final String SUFFIX_REGEX = "[A-Z][A-Za-z].*";
 
 	public void execute() throws MojoExecutionException {
 		LOG.info("Start ...");
 
-		if(!Pattern.compile(SUFFIX_REGEX).matcher(suffix).matches()) {
+		if (!Pattern.compile(SUFFIX_REGEX).matcher(suffix).matches()) {
 			throw new MojoExecutionException("Suffix has to follow the pattern: " + SUFFIX_REGEX);
 		}
 
@@ -138,16 +142,18 @@ public final class DtoGenMojo extends AbstractMojo {
 			throw new MojoExecutionException("Failed to write generated classes.", e);
 		}
 
+		this.project.addCompileSourceRoot(TARGET_GENERATED_SOURCES);
+
 		LOG.info("Success!");
 	}
 
 	private void write() throws IOException {
-		for(DtoClass dtoClass : this.generated) {
+		for (DtoClass dtoClass : this.generated) {
 			File target = this.project.getBasedir();
-			File targetFile = new File(target, "target/generated-sources/"
-					+ dtoClass.getName().replaceAll(Pattern.quote("."),"/") + ".java");
+			File targetFile = new File(target, TARGET_GENERATED_SOURCES
+					+ dtoClass.getName().replaceAll(Pattern.quote("."), "/") + ".java");
 			File parent = targetFile.getParentFile();
-			if(!parent.exists() && !parent.mkdirs()){
+			if (!parent.exists() && !parent.mkdirs()) {
 				throw new IllegalStateException("Couldn't create dir: " + parent);
 			}
 			try (FileWriter fileWriter = new FileWriter(targetFile)) {

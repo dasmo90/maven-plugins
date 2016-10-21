@@ -21,29 +21,34 @@ public class DtoClassGenerator {
 	public static final String CLASS_NAME_REGEX = "([a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*";
 	public static final int NOT_PARSEABLE = -2;
 	public static final int PARSEABLE = -1;
-
+	private static final String SEMI_COLON_NEW_LINE = ";\n";
+	private static final String SPACE_OPEN_CURLY_BRACE_NEW_LINE = " {\n";
+	private static final String CLOSE_CURLY_BRACE_NEW_LINE = "}\n";
+	private static final String NEW_LINE = "\n";
+	private static final String SPACE = " ";
+	private static final String OPEN_PARENTHESIS = "(";
+	private static final String CLOSE_PARENTHESIS = ")";
 	private final MojoLogger LOG;
-
 	private final List<Class> interfaces;
 	private final String suffix;
+	private final boolean generateSetters;
+	private final ExceptionalParsing[] exceptionalParsings;
+	private final List<Class> collectedInterfaces = new LinkedList<>();
+	private final Map<String, String> oldNameToNewName = new HashMap<>();
+	private List<DtoClass> generated;
+	private List<DtoAttribute> attrs;
 
-	private final ExceptionalParsing [] exceptionalParsings;
-
-
-	public DtoClassGenerator(MojoLogger log, String suffix, List<Class> interfaces) throws Exception {
+	public DtoClassGenerator(MojoLogger log, String suffix, List<Class> interfaces, boolean generateSetters) throws Exception {
 		this.LOG = log;
 		this.suffix = suffix;
 		this.interfaces = new LinkedList<>(interfaces);
-
-		exceptionalParsings = new ExceptionalParsing[] { new ListExceptionalParsing() };
+		this.generateSetters = generateSetters;
+		exceptionalParsings = new ExceptionalParsing[]{new ListExceptionalParsing()};
 	}
 
-	private final List<Class> collectedInterfaces = new LinkedList<>();
-	private final Map<String, String> oldNameToNewName = new HashMap<>();
-
 	private int checkType(Type type) {
-		for(int i = 0;i < this.exceptionalParsings.length;i++) {
-			if(exceptionalParsings[i].canParse(type)) {
+		for (int i = 0; i < this.exceptionalParsings.length; i++) {
+			if (exceptionalParsings[i].canParse(type)) {
 				return i;
 			}
 		}
@@ -52,7 +57,7 @@ public class DtoClassGenerator {
 		while (matcher.find()) {
 			classNames.add(matcher.group());
 		}
-		if(classNames.size() <= 1 || CollectionUtils.intersection(classNames, oldNameToNewName.keySet()).isEmpty()) {
+		if (classNames.size() <= 1 || CollectionUtils.intersection(classNames, oldNameToNewName.keySet()).isEmpty()) {
 			return PARSEABLE;
 		}
 		return NOT_PARSEABLE;
@@ -64,8 +69,8 @@ public class DtoClassGenerator {
 		Matcher matcher = pattern.matcher(typeName);
 		while (matcher.find()) {
 			String foundClass = matcher.group();
-			for(Map.Entry<String, String> entry : this.oldNameToNewName.entrySet()) {
-				if(entry.getKey().equals(foundClass)) {
+			for (Map.Entry<String, String> entry : this.oldNameToNewName.entrySet()) {
+				if (entry.getKey().equals(foundClass)) {
 					String suffix = typeName.substring(matcher.end());
 					String prefix = typeName.substring(0, matcher.start());
 					typeName = prefix + entry.getValue() + suffix;
@@ -82,36 +87,34 @@ public class DtoClassGenerator {
 	}
 
 	private void preCheck(Class c) throws UnsupportedInterfaceException {
-		if(!c.isInterface()) {
+		if (!c.isInterface()) {
 			throw new UnsupportedInterfaceException("Can only handle interfaces: " + c.toString());
 		}
-		if(!ArrayUtils.isEmpty(c.getTypeParameters())) {
+		if (!ArrayUtils.isEmpty(c.getTypeParameters())) {
 			throw new UnsupportedInterfaceException("Cannot handle typed interfaces: " + c.toString());
 		}
-		for(Method method : c.getMethods()) {
-			if(!ArrayUtils.isEmpty(method.getTypeParameters())) {
+		for (Method method : c.getMethods()) {
+			if (!ArrayUtils.isEmpty(method.getTypeParameters())) {
 				throw new UnsupportedInterfaceException(
 						"Cannot handle interfaces with typed methods: " + method.toString());
 			}
-			if(!Pattern.compile(GET_METHOD_REGEX).matcher(method.getName()).matches()) {
+			if (!Pattern.compile(GET_METHOD_REGEX).matcher(method.getName()).matches()) {
 				throw new UnsupportedInterfaceException(
 						"Can only handle getter-interfaces, method not allowed: " + method.toString());
 			}
-			if(!ArrayUtils.isEmpty(method.getGenericParameterTypes())) {
+			if (!ArrayUtils.isEmpty(method.getGenericParameterTypes())) {
 				throw new UnsupportedInterfaceException(
 						"Can only handle getter-interfaces, method not allowed: " + method.toString());
 			}
-			if(checkType(method.getGenericReturnType()) == NOT_PARSEABLE) {
+			if (checkType(method.getGenericReturnType()) == NOT_PARSEABLE) {
 				throw new UnsupportedInterfaceException(
 						"Can only handle none generic types, method not allowed: " + method.toString());
 			}
 		}
 	}
 
-	private List<DtoClass> generated;
-
 	public List<DtoClass> generate() {
-		if(generated != null) {
+		if (generated != null) {
 			return generated;
 		}
 
@@ -136,15 +139,13 @@ public class DtoClassGenerator {
 		return generated;
 	}
 
-	private List<DtoAttribute> attrs;
-
 	private void preScan(Class c) {
 
 		Pattern pattern = Pattern.compile(GET_METHOD_REGEX);
 		attrs = new LinkedList<>();
-		for(Method method : c.getMethods()) {
+		for (Method method : c.getMethods()) {
 			Matcher matcher = pattern.matcher(method.getName());
-			if(!ArrayUtils.isEmpty(method.getExceptionTypes())) {
+			if (!ArrayUtils.isEmpty(method.getExceptionTypes())) {
 				LOG.warn("Getter \"" + method.getName() + "\" throwing exception(s) which is not getter conform.");
 			}
 			if (matcher.matches()) {
@@ -158,14 +159,6 @@ public class DtoClassGenerator {
 			}
 		}
 	}
-
-	private static final String SEMI_COLON_NEW_LINE = ";\n";
-	private static final String SPACE_OPEN_CURLY_BRACE_NEW_LINE = " {\n";
-	private static final String CLOSE_CURLY_BRACE_NEW_LINE = "}\n";
-	private static final String NEW_LINE = "\n";
-	private static final String SPACE = " ";
-	private static final String OPEN_PARENTHESIS = "(";
-	private static final String CLOSE_PARENTHESIS = ")";
 
 	private DtoClass generateDto(Class c) {
 
@@ -186,7 +179,7 @@ public class DtoClassGenerator {
 		sb.append(SPACE_OPEN_CURLY_BRACE_NEW_LINE);
 		sb.append(NEW_LINE);
 
-		for(DtoAttribute attr : this.attrs) {
+		for (DtoAttribute attr : this.attrs) {
 
 			sb.append("\tprivate ");
 			sb.append(getNewTypeName(attr.getReturnType()));
@@ -195,27 +188,27 @@ public class DtoClassGenerator {
 			sb.append(SEMI_COLON_NEW_LINE);
 			sb.append(NEW_LINE);
 
-			/*
-			sb.append("\tpublic void set");
-			sb.append(attr.getMethodName());
-			sb.append(OPEN_PARENTHESIS);
-			sb.append(getNewTypeName(attr.getReturnType()));
-			sb.append(SPACE);
-			sb.append(attr.getName());
-			sb.append(CLOSE_PARENTHESIS);
-			sb.append(SPACE_OPEN_CURLY_BRACE_NEW_LINE);
-			sb.append("\t\tthis.");
-			sb.append(attr.getName());
-			sb.append("=");
-			sb.append(attr.getName());
-			sb.append(SEMI_COLON_NEW_LINE);
-			sb.append("\t");
-			sb.append(CLOSE_CURLY_BRACE_NEW_LINE);
-			sb.append(NEW_LINE);
-			*/
+			if (generateSetters) {
+				sb.append("\tpublic void set");
+				sb.append(attr.getMethodName());
+				sb.append(OPEN_PARENTHESIS);
+				sb.append(getNewTypeName(attr.getReturnType()));
+				sb.append(SPACE);
+				sb.append(attr.getName());
+				sb.append(CLOSE_PARENTHESIS);
+				sb.append(SPACE_OPEN_CURLY_BRACE_NEW_LINE);
+				sb.append("\t\tthis.");
+				sb.append(attr.getName());
+				sb.append(" = ");
+				sb.append(attr.getName());
+				sb.append(SEMI_COLON_NEW_LINE);
+				sb.append("\t");
+				sb.append(CLOSE_CURLY_BRACE_NEW_LINE);
+				sb.append(NEW_LINE);
+			}
 
 			int i = checkType(attr.getReturnType());
-			if(i == PARSEABLE) {
+			if (i == PARSEABLE) {
 				sb.append("\tpublic ");
 				sb.append(attr.getReturnType().getTypeName());
 				sb.append(" get");
