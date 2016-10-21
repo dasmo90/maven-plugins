@@ -1,5 +1,6 @@
 package de.dasmo90.maven.plugin.dtogen;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -43,6 +44,12 @@ public final class DtoGenMojo extends AbstractMojo {
 	@Parameter(defaultValue = "${project}", readonly = true)
 	private MavenProject project;
 
+	@Parameter(readonly = true, required = true)
+	private List<String> packagePrefixes;
+
+	@Parameter(defaultValue = "Dto", readonly = true)
+	private String suffix;
+
 	private List<Class> interfaces;
 	private List<DtoClass> generated;
 
@@ -65,7 +72,8 @@ public final class DtoGenMojo extends AbstractMojo {
 		}
 
 		Configuration configuration = new ConfigurationBuilder()
-				.filterInputsBy(new FilterBuilder().includePackage("de.dasmo90.business.rc.mode"))
+				.filterInputsBy(
+						new FilterBuilder().includePackage(packagePrefixes.toArray(new String[packagePrefixes.size()])))
 				.setUrls(urls)
 				.setScanners(new SubTypesScanner(false), new ResourcesScanner());
 		Reflections reflections = new Reflections(configuration);
@@ -100,11 +108,17 @@ public final class DtoGenMojo extends AbstractMojo {
 	}
 
 	private void generate() throws Exception {
-		generated = new DtoClassGenerator(LOG, "Dto", interfaces).generate();
+		generated = new DtoClassGenerator(LOG, suffix, interfaces).generate();
 	}
+
+	private static final String SUFFIX_REGEX = "[A-Z][A-Za-z].*";
 
 	public void execute() throws MojoExecutionException {
 		LOG.info("Start ...");
+
+		if(!Pattern.compile(SUFFIX_REGEX).matcher(suffix).matches()) {
+			throw new MojoExecutionException("Suffix has to follow the pattern: " + SUFFIX_REGEX);
+		}
 
 		try {
 			load();
