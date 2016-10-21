@@ -1,0 +1,3 @@
+	public java.util.List<${interface}> get${methodName}() {
+		return this.${attrName}.stream().map(${interface}.class::cast).collect(java.util.stream.Collectors.toList());
+	}
