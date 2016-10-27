@@ -1,5 +1,6 @@
 package de.dasmo90.maven.plugin.dtogen;
 
+import de.dasmo90.maven.plugin.base.MavenPluginClassLoader;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -56,61 +57,11 @@ public final class DtoGenMojo extends AbstractMojo {
 	@Parameter(defaultValue = "false", readonly = true)
 	private boolean generateSetters;
 
-	private List<Class> interfaces;
+	private List<Class<?>> interfaces;
 	private List<DtoClass> generated;
 
 	public DtoGenMojo() {
 		LOG = new MojoLogger(this.getLog());
-	}
-
-	private void load() throws MalformedURLException, DependencyResolutionRequiredException {
-
-		List<URL> urls = new LinkedList<>();
-		for (String elt : project.getCompileSourceRoots()) {
-			URL url = new File(elt).toURI().toURL();
-			urls.add(url);
-			LOG.debug("Source root: " + url);
-		}
-		for (String elt : project.getCompileClasspathElements()) {
-			URL url = new File(elt).toURI().toURL();
-			urls.add(url);
-			LOG.debug("Compile classpath: " + url);
-		}
-
-		Configuration configuration = new ConfigurationBuilder()
-				.filterInputsBy(
-						new FilterBuilder().includePackage(packagePrefixes.toArray(new String[packagePrefixes.size()])))
-				.setUrls(urls)
-				.setScanners(new SubTypesScanner(false), new ResourcesScanner());
-		Reflections reflections = new Reflections(configuration);
-		URLClassLoader child = new URLClassLoader(urls.toArray(new URL[urls.size()]),
-				this.getClass().getClassLoader());
-
-		// lambdas not allowed
-		Set<String> allTypes;
-		try {
-			allTypes = reflections.getAllTypes();
-		} catch (ReflectionsException e) {
-			LOG.warn("No classes found in classpath.");
-			interfaces = Collections.emptyList();
-			return;
-		}
-
-		interfaces = allTypes.stream().map(new Function<String, Class>() {
-			@Override
-			public Class apply(String s) {
-				try {
-					return child.loadClass(s);
-				} catch (ClassNotFoundException e) {
-					return null;
-				}
-			}
-		}).filter(new Predicate<Class>() {
-			@Override
-			public boolean test(Class c) {
-				return c != null && c.isInterface();
-			}
-		}).collect(Collectors.toList());
 	}
 
 	private void generate() throws Exception {
@@ -125,7 +76,12 @@ public final class DtoGenMojo extends AbstractMojo {
 		}
 
 		try {
-			load();
+			interfaces = new MavenPluginClassLoader(project)
+					.loadClasses(packagePrefixes.toArray(new String[packagePrefixes.size()]));
+
+			for(Class c : interfaces) {
+				LOG.info(c.getName());
+			}
 		} catch (Exception e) {
 			throw new MojoExecutionException("Failed to load interfaces from classpath.", e);
 		}

@@ -11,16 +11,15 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>dto-gen-plugin</artifactId>
-  <packaging>maven-plugin</packaging>
- 
-  <name>DTO Generator Maven Plugin</name>
+  <artifactId>maven-plugin-base</artifactId>
+  <name>Maven Plugin Base</name>
+  <packaging>jar</packaging>
 
   <dependencies>
     <dependency>
-      <groupId>de.dasmo90.maven-plugins</groupId>
-      <artifactId>maven-plugin-base</artifactId>
-      <version>${parent.version}</version>
+      <groupId>org.reflections</groupId>
+      <artifactId>reflections</artifactId>
+      <version>0.9.10</version>
     </dependency>
   </dependencies>
 

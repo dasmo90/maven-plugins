@@ -38,7 +38,7 @@ public class DtoClassGenerator {
 	private List<DtoClass> generated;
 	private List<DtoAttribute> attrs;
 
-	public DtoClassGenerator(MojoLogger log, String suffix, List<Class> interfaces, boolean generateSetters) throws Exception {
+	public DtoClassGenerator(MojoLogger log, String suffix, List<Class<?>> interfaces, boolean generateSetters) throws Exception {
 		this.LOG = log;
 		this.suffix = suffix;
 		this.interfaces = new LinkedList<>(interfaces);
@@ -47,11 +47,6 @@ public class DtoClassGenerator {
 	}
 
 	private int checkType(Type type) {
-		for (int i = 0; i < this.exceptionalParsings.length; i++) {
-			if (exceptionalParsings[i].canParse(type)) {
-				return i;
-			}
-		}
 		Matcher matcher = Pattern.compile(CLASS_NAME_REGEX).matcher(type.getTypeName());
 		List<String> classNames = new ArrayList<>();
 		while (matcher.find()) {
@@ -59,6 +54,11 @@ public class DtoClassGenerator {
 		}
 		if (classNames.size() <= 1 || CollectionUtils.intersection(classNames, oldNameToNewName.keySet()).isEmpty()) {
 			return PARSEABLE;
+		}
+		for (int i = 0; i < this.exceptionalParsings.length; i++) {
+			if (exceptionalParsings[i].canParse(type)) {
+				return i;
+			}
 		}
 		return NOT_PARSEABLE;
 	}
