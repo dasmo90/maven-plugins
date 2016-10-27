@@ -11,7 +11,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>maven-plugin-base</artifactId>
+  <artifactId>plugin-base</artifactId>
   <name>Maven Plugin Base</name>
   <packaging>jar</packaging>
 
