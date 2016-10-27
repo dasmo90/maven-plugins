@@ -1,7 +1,6 @@
 package de.dasmo90.maven.plugin.dtogen;
 
 import de.dasmo90.maven.plugin.base.MavenPluginClassLoader;
-import de.dasmo90.maven.plugin.base.MojoLogger;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -9,11 +8,14 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Mojo(
@@ -27,7 +29,7 @@ public final class DtoGenMojo extends AbstractMojo {
 
 	private static final String SUFFIX_REGEX = "[A-Z][A-Za-z].*";
 
-	private MojoLogger LOG;
+	private static final Logger LOG = LoggerFactory.getLogger(DtoGenMojo.class);
 
 	@Parameter(defaultValue = "${project}", readonly = true)
 	private MavenProject project;
@@ -44,16 +46,11 @@ public final class DtoGenMojo extends AbstractMojo {
 	private List<Class<?>> interfaces;
 	private List<DtoClass> generated;
 
-	public DtoGenMojo() {
-		LOG = new MojoLogger(this.getLog());
-	}
-
 	private void generate() throws Exception {
-		generated = new DtoClassGenerator(LOG, suffix, interfaces, generateSetters).generate();
+		generated = new DtoClassGenerator(suffix, interfaces, generateSetters).generate();
 	}
 
 	public void execute() throws MojoExecutionException {
-		LOG.info("Start ...");
 
 		if (!Pattern.compile(SUFFIX_REGEX).matcher(suffix).matches()) {
 			throw new MojoExecutionException("Suffix has to follow the pattern: " + SUFFIX_REGEX);
@@ -61,12 +58,14 @@ public final class DtoGenMojo extends AbstractMojo {
 
 		try {
 			interfaces = new MavenPluginClassLoader(project)
-					.loadClasses(Class::isInterface,
+					.loadClasses(new Predicate<Class<?>>() {
+									 @Override
+									 public boolean test(Class<?> c) {
+										 return c.isInterface();
+									 }
+								 },
 							packagePrefixes.toArray(new String[packagePrefixes.size()]));
 
-			for(Class c : interfaces) {
-				LOG.info(c.getName());
-			}
 		} catch (Exception e) {
 			throw new MojoExecutionException("Failed to load interfaces from classpath.", e);
 		}
@@ -84,8 +83,6 @@ public final class DtoGenMojo extends AbstractMojo {
 		}
 
 		this.project.addCompileSourceRoot(TARGET_GENERATED_SOURCES);
-
-		LOG.info("Success!");
 	}
 
 	private void write() throws IOException {

@@ -1,8 +1,9 @@
 package de.dasmo90.maven.plugin.dtogen;
 
-import de.dasmo90.maven.plugin.base.MojoLogger;
 import org.apache.commons.lang3.ArrayUtils;
 import org.codehaus.plexus.util.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -29,7 +30,8 @@ public class DtoClassGenerator {
 	private static final String SPACE = " ";
 	private static final String OPEN_PARENTHESIS = "(";
 	private static final String CLOSE_PARENTHESIS = ")";
-	private final MojoLogger LOG;
+	private static final Logger LOG = LoggerFactory.getLogger(DtoClassGenerator.class);
+
 	private final List<Class> interfaces;
 	private final String suffix;
 	private final boolean generateSetters;
@@ -39,9 +41,8 @@ public class DtoClassGenerator {
 	private List<DtoClass> generated;
 	private List<DtoAttribute> attrs;
 
-	public DtoClassGenerator(MojoLogger log, String suffix, List<Class<?>> interfaces, boolean generateSetters) throws
+	public DtoClassGenerator(String suffix, List<Class<?>> interfaces, boolean generateSetters) throws
 			Exception {
-		this.LOG = log;
 		this.suffix = suffix;
 		this.interfaces = new LinkedList<>(interfaces);
 		this.generateSetters = generateSetters;

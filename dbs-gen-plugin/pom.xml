@@ -2,26 +2,26 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+	<modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>de.dasmo90.maven-plugins</groupId>
-    <artifactId>maven-plugin-parent</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
-  </parent>
+	<parent>
+		<groupId>de.dasmo90.maven-plugins</groupId>
+		<artifactId>maven-plugin-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
 
-  <artifactId>dbs-gen-plugin</artifactId>
-  <packaging>maven-plugin</packaging>
- 
-  <name>DB Schema Generator Maven Plugin</name>
+	<artifactId>dbs-gen-plugin</artifactId>
+	<packaging>maven-plugin</packaging>
 
-  <dependencies>
-    <dependency>
-      <groupId>de.dasmo90.maven-plugins</groupId>
-      <artifactId>maven-plugin-base</artifactId>
-      <version>${parent.version}</version>
-    </dependency>
-  </dependencies>
+	<name>DB Schema Generator Maven Plugin</name>
+
+	<dependencies>
+		<dependency>
+			<groupId>de.dasmo90.maven-plugins</groupId>
+			<artifactId>plugin-base</artifactId>
+			<version>${parent.version}</version>
+		</dependency>
+	</dependencies>
 
 </project>
