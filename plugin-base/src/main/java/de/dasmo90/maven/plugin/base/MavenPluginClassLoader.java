@@ -62,7 +62,7 @@ public class MavenPluginClassLoader {
 		return this.urlClassLoader.loadClass(name);
 	}
 
-	public List<Class<?>> loadClasses(String... prefixes) {
+	public List<Class<?>> loadClasses(Predicate<Class<?>> predicate, String... prefixes) {
 		Configuration configuration = new ConfigurationBuilder()
 				.filterInputsBy(new FilterBuilder().includePackage(prefixes))
 				.setUrls(urls)
@@ -86,11 +86,20 @@ public class MavenPluginClassLoader {
 					return null;
 				}
 			}
-		}).filter(new Predicate<Class>() {
+		}).filter(new Predicate<Class<?>>() {
 			@Override
-			public boolean test(Class c) {
-				return c != null && c.isInterface();
+			public boolean test(Class<?> c) {
+				return c != null;
 			}
-		}).collect(Collectors.toList());
+		}).filter(predicate).collect(Collectors.toList());
+	}
+
+	public List<Class<?>> loadClasses(String... prefixes) {
+		return loadClasses(new Predicate<Class<?>>() {
+			@Override
+			public boolean test(Class<?> aClass) {
+				return true;
+			}
+		}, prefixes);
 	}
 }

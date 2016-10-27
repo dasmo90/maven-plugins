@@ -1,8 +1,6 @@
 package de.dasmo90.maven.plugin.base;
 
 import org.apache.maven.plugin.logging.Log;
-import org.slf4j.Logger;
-import org.slf4j.Marker;
 
 public class MojoLogger {
 

@@ -1,5 +1,6 @@
 package de.dasmo90.maven.plugin.dtogen;
 
+import de.dasmo90.maven.plugin.base.MojoLogger;
 import org.apache.commons.lang3.ArrayUtils;
 import org.codehaus.plexus.util.CollectionUtils;
 
@@ -38,7 +39,8 @@ public class DtoClassGenerator {
 	private List<DtoClass> generated;
 	private List<DtoAttribute> attrs;
 
-	public DtoClassGenerator(MojoLogger log, String suffix, List<Class<?>> interfaces, boolean generateSetters) throws Exception {
+	public DtoClassGenerator(MojoLogger log, String suffix, List<Class<?>> interfaces, boolean generateSetters) throws
+			Exception {
 		this.LOG = log;
 		this.suffix = suffix;
 		this.interfaces = new LinkedList<>(interfaces);

@@ -60,5 +60,6 @@
   <modules>
     <module>plugin-base</module>
     <module>dto-gen-plugin</module>
+    <module>dbs-gen-plugin</module>
   </modules>
 </project>

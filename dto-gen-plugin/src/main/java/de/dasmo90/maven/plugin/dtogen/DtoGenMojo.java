@@ -1,7 +1,7 @@
 package de.dasmo90.maven.plugin.dtogen;
 
 import de.dasmo90.maven.plugin.base.MavenPluginClassLoader;
-import org.apache.maven.artifact.DependencyResolutionRequiredException;
+import de.dasmo90.maven.plugin.base.MojoLogger;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -9,28 +9,12 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.reflections.Configuration;
-import org.reflections.Reflections;
-import org.reflections.ReflectionsException;
-import org.reflections.scanners.ResourcesScanner;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Mojo(
 		name = "generate-dtos",
@@ -77,7 +61,8 @@ public final class DtoGenMojo extends AbstractMojo {
 
 		try {
 			interfaces = new MavenPluginClassLoader(project)
-					.loadClasses(packagePrefixes.toArray(new String[packagePrefixes.size()]));
+					.loadClasses(Class::isInterface,
+							packagePrefixes.toArray(new String[packagePrefixes.size()]));
 
 			for(Class c : interfaces) {
 				LOG.info(c.getName());
