@@ -1,4 +1,4 @@
-package de.dasmo90.maven.plugin.dtogen;
+package de.dasmo90.maven.plugin.base;
 
 import org.apache.maven.plugin.logging.Log;
 import org.slf4j.Logger;
