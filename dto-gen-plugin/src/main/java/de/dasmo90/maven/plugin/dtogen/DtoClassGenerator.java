@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -132,13 +131,7 @@ public class DtoClassGenerator {
 			}
 
 		}
-		// lambdas not allowed
-		generated = collectedInterfaces.stream().map(new Function<Class, DtoClass>() {
-			@Override
-			public DtoClass apply(Class c) {
-				return DtoClassGenerator.this.generateDto(c);
-			}
-		}).collect(Collectors.toList());
+		generated = collectedInterfaces.stream().map(this::generateDto).collect(Collectors.toList());
 		return generated;
 	}
 

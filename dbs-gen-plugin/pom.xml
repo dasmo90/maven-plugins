@@ -20,7 +20,12 @@
 		<dependency>
 			<groupId>de.dasmo90.maven-plugins</groupId>
 			<artifactId>plugin-base</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>5.2.3.Final</version>
 		</dependency>
 	</dependencies>
 

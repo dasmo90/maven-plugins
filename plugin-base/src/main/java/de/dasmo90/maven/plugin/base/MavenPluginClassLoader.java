@@ -13,18 +13,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class MavenPluginClassLoader {
+public class MavenPluginClassLoader extends ClassLoader {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MavenPluginClassLoader.class);
 
@@ -33,19 +36,27 @@ public class MavenPluginClassLoader {
 	private final URLClassLoader urlClassLoader;
 
 	public MavenPluginClassLoader(MavenProject project) throws DependencyResolutionRequiredException {
+		this(project, project.getClassRealm());
+	}
+
+	public MavenPluginClassLoader(MavenProject project, ClassLoader classLoader) throws
+			DependencyResolutionRequiredException {
 		this.project = project;
 		this.urls = new LinkedList<>();
 		load();
 		this.urlClassLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]),
-				project.getClassRealm() /*this.getClass().getClassLoader()*/);
+				classLoader
+		);
 	}
 
 	private void load() throws DependencyResolutionRequiredException {
 		for (String elt : project.getCompileSourceRoots()) {
 			addUrl(elt);
+			LOG.debug("Added compile source roots element: {}", elt);
 		}
 		for (String elt : project.getCompileClasspathElements()) {
 			addUrl(elt);
+			LOG.debug("Added compile classpath element: {}", elt);
 		}
 	}
 
@@ -58,6 +69,7 @@ public class MavenPluginClassLoader {
 		}
 	}
 
+	@Override
 	public Class<?> loadClass(String name) throws ClassNotFoundException {
 		return this.urlClassLoader.loadClass(name);
 	}
@@ -77,29 +89,84 @@ public class MavenPluginClassLoader {
 			LOG.warn("No classes found in classpath.");
 			return Collections.emptyList();
 		}
-		return allTypes.stream().map(new Function<String, Class<?>>() {
-			@Override
-			public Class<?> apply(String s) {
-				try {
-					return loadClass(s);
-				} catch (ClassNotFoundException e) {
-					return null;
-				}
+		List<Class<?>> collect = allTypes.stream().map(s -> {
+			try {
+				return loadClass(s);
+			} catch (ClassNotFoundException e) {
+				return null;
 			}
-		}).filter(new Predicate<Class<?>>() {
-			@Override
-			public boolean test(Class<?> c) {
-				return c != null;
-			}
-		}).filter(predicate).collect(Collectors.toList());
+		}).filter(Objects::nonNull).filter(predicate).collect(Collectors.toList());
+		LOG.info("{} classes found in classpath.", collect.size());
+		LOG.debug("Found: {}", collect);
+		return collect;
 	}
 
 	public List<Class<?>> loadClasses(String... prefixes) {
-		return loadClasses(new Predicate<Class<?>>() {
-			@Override
-			public boolean test(Class<?> aClass) {
-				return true;
-			}
-		}, prefixes);
+		return loadClasses(c -> true, prefixes);
+	}
+
+	@Override
+	public URL getResource(String name) {
+		return this.urlClassLoader.getResource(name);
+	}
+
+	@Override
+	public Enumeration<URL> getResources(String name) throws IOException {
+		return this.urlClassLoader.getResources(name);
+	}
+
+	@Override
+	public InputStream getResourceAsStream(String name) {
+		return this.urlClassLoader.getResourceAsStream(name);
+	}
+
+	@Override
+	public void setDefaultAssertionStatus(boolean enabled) {
+		this.urlClassLoader.setDefaultAssertionStatus(enabled);
+	}
+
+	@Override
+	public void setPackageAssertionStatus(String packageName, boolean enabled) {
+		this.urlClassLoader.setPackageAssertionStatus(packageName, enabled);
+	}
+
+	@Override
+	public void setClassAssertionStatus(String className, boolean enabled) {
+		this.urlClassLoader.setClassAssertionStatus(className, enabled);
+	}
+
+	@Override
+	public void clearAssertionStatus() {
+		this.urlClassLoader.clearAssertionStatus();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		MavenPluginClassLoader that = (MavenPluginClassLoader) o;
+
+		if (!project.equals(that.project)) return false;
+		if (!urls.equals(that.urls)) return false;
+		return urlClassLoader.equals(that.urlClassLoader);
+
+	}
+
+	@Override
+	public int hashCode() {
+		int result = project.hashCode();
+		result = 31 * result + urls.hashCode();
+		result = 31 * result + urlClassLoader.hashCode();
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "MavenPluginClassLoader{" +
+				"project=" + project +
+				", urls=" + urls +
+				", urlClassLoader=" + urlClassLoader +
+				'}';
 	}
 }

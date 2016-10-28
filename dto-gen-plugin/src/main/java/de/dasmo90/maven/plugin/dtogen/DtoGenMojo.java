@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Mojo(
@@ -25,11 +24,11 @@ import java.util.regex.Pattern;
 )
 public final class DtoGenMojo extends AbstractMojo {
 
+	private static final Logger LOG = LoggerFactory.getLogger(DtoGenMojo.class);
+
 	private static final String TARGET_GENERATED_SOURCES = "target/generated-sources/";
 
 	private static final String SUFFIX_REGEX = "[A-Z][A-Za-z].*";
-
-	private static final Logger LOG = LoggerFactory.getLogger(DtoGenMojo.class);
 
 	@Parameter(defaultValue = "${project}", readonly = true)
 	private MavenProject project;
@@ -58,12 +57,7 @@ public final class DtoGenMojo extends AbstractMojo {
 
 		try {
 			interfaces = new MavenPluginClassLoader(project)
-					.loadClasses(new Predicate<Class<?>>() {
-									 @Override
-									 public boolean test(Class<?> c) {
-										 return c.isInterface();
-									 }
-								 },
+					.loadClasses(Class::isInterface,
 							packagePrefixes.toArray(new String[packagePrefixes.size()]));
 
 		} catch (Exception e) {
