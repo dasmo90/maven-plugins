@@ -81,7 +81,6 @@ public class MavenPluginClassLoader extends ClassLoader {
 				.setScanners(new SubTypesScanner(false), new ResourcesScanner());
 		Reflections reflections = new Reflections(configuration);
 
-		// lambdas not allowed
 		Set<String> allTypes;
 		try {
 			allTypes = reflections.getAllTypes();
@@ -97,7 +96,11 @@ public class MavenPluginClassLoader extends ClassLoader {
 			}
 		}).filter(Objects::nonNull).filter(predicate).collect(Collectors.toList());
 		LOG.info("{} classes found in classpath.", collect.size());
-		LOG.debug("Found: {}", collect);
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Found:\n{}",
+					String.join("\n", collect.stream().map(Class::getName).sorted().collect(Collectors.toList())));
+		}
 		return collect;
 	}
 

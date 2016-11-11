@@ -10,6 +10,8 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.boot.registry.classloading.internal.ClassLoaderServiceImpl;
+import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.HSQLDialect;
 import org.hibernate.dialect.MySQLDialect;
@@ -93,6 +95,7 @@ public final class DbsGenMojo extends AbstractMojo {
 						connection.getPassword());
 			}
 			StandardServiceRegistryBuilder registryBuilder = new StandardServiceRegistryBuilder();
+			registryBuilder.addService(ClassLoaderService.class, new ClassLoaderServiceImpl(projectClassLoader));
 			registryBuilder.applySetting("hibernate.dialect", dialectClass);
 
 			if(dbConnection != null) {
